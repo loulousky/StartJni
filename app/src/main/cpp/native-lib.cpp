@@ -43,7 +43,6 @@ Java_com_example_liuhai_jnilib_MainActivity_getStaticField(JNIEnv *env, jobject 
     jstring  result=env->NewStringUTF(value);
     env->SetStaticObjectField(clz,jfieldID1,result);
 
-    env->Get
     return result;
 }
 
@@ -64,9 +63,67 @@ JNIEXPORT void JNICALL
 Java_com_example_liuhai_jnilib_MainActivity_CallStaticMethod(JNIEnv *env, jobject instance) {
 
     jclass  jclass1=env->GetObjectClass(instance);
-    jmethodID  jmethodID1=env->GetStaticMethodID(jclass1,"test2","(v;)v");
+    jmethodID  jmethodID1=env->GetStaticMethodID(jclass1,"test2","()V");
     env->CallStaticVoidMethod(jclass1,jmethodID1);
 
 
+
+}
+
+extern "C"
+JNIEXPORT jstring JNICALL
+Java_com_example_liuhai_jnilib_MainActivity_CallConstructMethod(JNIEnv *env, jobject instance) {
+    //Jint数组，转成Jint的指针
+    jclass  jclass1=env->FindClass("java/util/Date");
+    //构造方法的方法名统一为<init>即可
+    jmethodID conmethodi=env->GetMethodID(jclass1,"<init>","()V");
+    jobject  date=env->NewObject(jclass1,conmethodi);//调用无参数的构造函数，返回一个对象
+    //接下来跟开始调用流程一样了
+    jmethodID timeid=env->GetMethodID(jclass1,"getTime","()J");
+    //获得了时间戳
+    jlong  time=env->CallLongMethod(date,timeid)/1000;
+    //返回时间戳
+    return env->NewStringUTF(std::to_string(time).c_str());
+
+}
+//用来进行比较的函数
+int compareMyType (const void * a, const void * b)
+{ if ( *(jint*)a <  *(jint *)b ) return -1;
+    if ( *(jint*)a == *(jint*)b ) return 0;
+    if ( *(jint*)a >  *(jint*)b ) return 1;
+}
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_example_liuhai_jnilib_MainActivity_SortArray(JNIEnv *env, jobject instance, jintArray array_) {
+    if(array_==NULL){
+        return ;
+    }
+    //获得数组的大小
+   int length= env->GetArrayLength(array_);
+    //把jintArry类型转换成C++的int数组指针
+            //这里得到的数据跟传进来的数组不是同一个，地址会不一样
+    jint *array = env->GetIntArrayElements(array_, NULL);
+    qsort(array,length, sizeof(jint),compareMyType);
+    //要想应用到JAVA中传入的数组上面，必须使用这个方法映射过去。0的意思的改变JAVA数组，并且释放C中创建数组的内存
+    env->ReleaseIntArrayElements(array_, array, 0);
+}
+
+extern "C"
+JNIEXPORT jintArray JNICALL
+Java_com_example_liuhai_jnilib_MainActivity_getArray(JNIEnv *env, jobject instance) {
+   //创建一个10个SIZE的JNI INT数组，jni的数组场景都是NewxxxArray的类型
+    jintArray  array=env->NewIntArray(10);
+    //转换成C的数组指针
+    jint * arrint=env->GetIntArrayElements(array,NULL);
+
+
+    for (int i = 0; i <10 ; ++i) {
+        //给数组每个元素赋值
+        *(arrint+i)=i;
+    }
+    env->ReleaseIntArrayElements(array,arrint,0);
+
+    return array;
+    // TODO
 
 }
